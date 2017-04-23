@@ -1,9 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <nfc/nfc.h>
-int
-CardTransmit(nfc_device *pnd, uint8_t * capdu, size_t capdulen, uint8_t * rapdu, size_t * rapdulen)
-{
+int CardTransmit(nfc_device *pnd, uint8_t * capdu, size_t capdulen, uint8_t * rapdu, size_t * rapdulen) {
   int res;
   size_t  szPos;
   printf("=> ");
@@ -25,9 +23,21 @@ CardTransmit(nfc_device *pnd, uint8_t * capdu, size_t capdulen, uint8_t * rapdu,
 	return 0;
   }
 }
-int
-main(int argc, const char *argv[])
-{
+
+int main(int argc, const char *argv[]) {
+
+  printf("%d\n",sizeof(int));
+
+  char pipe_filename[] = "nfc_fifo.tmp";
+  unlink(pipe_filename);
+  int pipe_fd = mkfifo(pipe_filename, 0777);
+
+  if (pipe_fd != 0) {
+      printf("mkfifo() error: %d\n", pipe_fd);
+      return -1;
+  }
+    printf("A\n");
+
   nfc_device *pnd;
   nfc_target nt;
   nfc_context *context;
@@ -81,49 +91,51 @@ main(int argc, const char *argv[])
   memcpy(capdu, "\x48\x65\x6C\x6C\x6F\x20\x66\x72\x6F\x6D\x20\x52\x50\x69", 14);
   capdulen=14;
 
-  while ( ct >= 0 ) {
+  size_t  szPos;
+  while ( true ) {
     // Listen while remote in range  
     rapdulen = sizeof(rapdu);
     ct = CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen);
+    if (ct < 0) break;
+
+    printf("Length: %d\n", rapdulen);
+
+    for (szPos = 0; szPos < rapdulen; szPos++) {
+      printf("%d ", rapdu[szPos]);
+    } 
+
+    if ( rapdu[0] == 0x66 && rapdu[1] == 0x66 ) {
+      printf("Writing to FIFO\n");
+
+      FILE * wfd = fopen(pipe_filename, "w");
+      if (wfd < 0) {
+        printf("open() error: %d\n", wfd);
+        return -1;
+      }
+
+      for (szPos = 0; szPos < rapdulen; szPos++) {
+        int s_write = fprintf(wfd, "%d ", rapdu[szPos]);
+
+        if (s_write < 0)
+        {
+            printf("fprintf() error: %d\n", s_write);
+            break;
+        }
+      } 
+      
+      fclose(wfd);
+    }
+    
+    printf("\n");
+    
+
+
   }
 
   printf("end\n");
 
-  if (rapdulen < 2 || rapdu[rapdulen-2] != 0x90 || rapdu[rapdulen-1] != 0x00) {
-    printf("B\n");
-    exit(EXIT_FAILURE);
-  };
-  
-  printf("E\n");
-  printf("Application selected!\n");
+  unlink(pipe_filename);
 
-  // Select Capability Container
-  memcpy(capdu, "\x00\xa4\x00\x0c\x02\xe1\x03", 7);  
-  capdulen=7;
-  rapdulen=sizeof(rapdu);
-  if (CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen) < 0)
-	exit(EXIT_FAILURE);
-  if (rapdulen < 2 || rapdu[rapdulen-2] != 0x90 || rapdu[rapdulen-1] != 0x00) {
-    capdu[3]='\x00'; // Maybe an older Tag4 ?
-    if (CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen) < 0)
-      exit(EXIT_FAILURE);
-  }
-  printf("Capability Container selected!\n");
-
-  // Read Capability Container
-  memcpy(capdu, "\x00\xb0\x00\x00\x0f", 5);  
-  capdulen=5;
-  rapdulen=sizeof(rapdu);
-  if (CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen) < 0)
-    exit(EXIT_FAILURE);
-  if (rapdulen < 2 || rapdu[rapdulen-2] != 0x90 || rapdu[rapdulen-1] != 0x00)
-    exit(EXIT_FAILURE);
-  printf("Capability Container header:\n");
-  size_t  szPos;
-  for (szPos = 0; szPos < rapdulen-2; szPos++) {
-    printf("%02x ", rapdu[szPos]);
-  }
-  printf("\n");
   nfc_close(pnd);
   nfc_exit(context);
   exit(EXIT_SUCCESS);
