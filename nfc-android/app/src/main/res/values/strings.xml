@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">NFC Pass</string>
+    <string name="signed_out">Signed out</string>
+    <string name="sign_out">Sign out</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="loading">Loading</string>
+    <string name="google_status_fmt">Google status %1$s</string>
+    <string name="firebase_status_fmt">Firebase status %1$s</string>
+</resources>
