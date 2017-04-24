@@ -10,6 +10,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 public class User {
     private String name;
+    private String email;
     private String nid;
     private String pin;
     private FirebaseUser firebaseUser;
@@ -31,20 +32,28 @@ public class User {
         this.name = name;
     }
 
-    public String getNfcId() {
-        return nid;
-    }
-
-    public void setNfcId(String nid) {
-        this.nid = nid;
-    }
-
     public String getPin() {
         return pin;
     }
 
     public void setPin(String pin) {
         this.pin = pin;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getNid() {
+        return nid;
+    }
+
+    public void setNid(String nid) {
+        this.nid = nid;
     }
 
     public FirebaseUser getFirebaseUser() {
@@ -58,16 +67,17 @@ public class User {
     @Override
     public String toString() {
         return "User{" +
-                "name='" + name + '\'' +
+                "pin='" + pin + '\'' +
                 ", nid='" + nid + '\'' +
-                ", pin='" + pin + '\'' +
+                ", email='" + email + '\'' +
+                ", name='" + name + '\'' +
                 '}';
     }
 
     public static User loadUser(SharedPreferences sharedPref) {
         User user = new User();
         user.setName(sharedPref.getString("username",null));
-        user.setNfcId(sharedPref.getString("nfcId",null));
+        user.setNid(sharedPref.getString("nfcId",null));
         user.setPin(sharedPref.getString("pin",null));
         return user;
     }
@@ -77,6 +87,14 @@ public class User {
         editor.putString("username",this.name);
         editor.putString("nfcId",this.nid);
         editor.putString("pin",this.pin);
+        return editor.commit();
+    }
+
+    public boolean removeUser(SharedPreferences sharedPref) {
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.remove("username");
+        editor.remove("nfcId");
+        editor.remove("pin");
         return editor.commit();
     }
 }
