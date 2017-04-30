@@ -39,7 +39,7 @@ LOG.debug("Firebase loaded")
 
 # Block until writer finishes...
 while True:
-    LOG.debug("Waiting for communication...")
+    #LOG.debug("Waiting for communication...")
     with open(FIFO_FILE, 'r') as f:
         data = f.read()
 
@@ -66,11 +66,11 @@ while True:
     else:
       userValues = user.each()[0].val()
 
-      outputJson = {'Timestamp': datetime.datetime.now().isoformat(),
-                    'Username': userValues['name'],
-                    'E-Mail': userValues['email'],
-                    'FirebaseID': user.each()[0].key(),
-                    'Action':'False'}
+      outputJson = [datetime.datetime.now().isoformat(),
+                    userValues['name'],
+                    userValues['email'],
+                    user.each()[0].key(),
+                    "False"]
 
       print("DISPLEJ - Zadaj PIN")
       LOG.debug("ID is in database.")
@@ -80,7 +80,7 @@ while True:
         LOG.debug("Loaded PIN:{}".format(loadedPin))
 
         if(userValues["pin"] == loadedPin):
-          outputJson["Action"] = "True"
+          outputJson[4] = "True"
           appendAuditJson(outputJson)
           LOG.debug("Authorization successful, User:{}".format(userValues["name"]))
           print("DISPLEJ - Autorizacia uspesna!")
