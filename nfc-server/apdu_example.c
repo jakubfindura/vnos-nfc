@@ -5,11 +5,17 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include <wiringPi.h>
+
 #define BUFFER_SIZE 10000 
 #define MAX_CONNECTION 10
 
 #define HOSTNAME_LEN 255
 #define MAX_TRIES 10
+
+#define LED_GREEN 14
+#define LED_RED 13
+#define LED_WHITE 11 //Second Green for now 
 
 char pipe_filename[] = "nfc_fifo.tmp";
 
@@ -67,6 +73,11 @@ int writeToFIFO(uint8_t* apdu, size_t apdulen) {
 }
 
 int main(int argc, const char *argv[]) {
+
+  wiringPiSetup();
+  // pinMode(LED_GREEN, OUTPUT);
+  // pinMode(LED_RED, OUTPUT);
+  pinMode(LED_WHITE, OUTPUT);
   
   unlink(pipe_filename);
   int pipe_fd = mkfifo(pipe_filename, 0777);
@@ -110,9 +121,11 @@ int main(int argc, const char *argv[]) {
 
   while (true) {
     printf("Polling for target...\n");
+    digitalWrite(LED_WHITE,LOW);
     while (nfc_initiator_select_passive_target(pnd, nmMifare, NULL, 0, &nt) <= 0);
     printf("Target detected!\n");
-    
+    digitalWrite(LED_WHITE,HIGH);
+
     uint8_t capdu[264];
     size_t capdulen;
     uint8_t rapdu[264];
