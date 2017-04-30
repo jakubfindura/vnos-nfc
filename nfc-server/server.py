@@ -1,8 +1,11 @@
 from logger import LOG
 from keypad import readFromKeyboard
 import pyrebase
+import json
+import time
 
 FIFO_FILE = "nfc_fifo.tmp"
+AUDIT_FILE = "arrays.json"
 NUMBER_OF_PIN_ATTEMPTS = 3
 
 
@@ -21,26 +24,32 @@ class NfcRecord:
          self.nID = nID
          self.timestamp = timestamp
 
+
+def appendAuditJson(jsonAudit):
+  with open(AUDIT_FILE, mode='r', encoding='utf-8') as feedsjson:
+    feeds = json.load(feedsjson)
+  with open(AUDIT_FILE, mode='w', encoding='utf-8') as feedsjson:
+    feeds['data'].append(jsonAudit)
+    json.dump(feeds, feedsjson)
+
 # Load Firebase APP
-print("A")
 firebase = pyrebase.initialize_app(config)
-print("B")
 db = firebase.database()
+LOG.debug("Firebase loaded")
 
 # Block until writer finishes...
 while True:
-    print("Waiting...")
+    LOG.debug("Waiting for communication...")
     with open(FIFO_FILE, 'r') as f:
         data = f.read()
 
 
-    LOG.info("Loaded string from NFC:{}".format(data))
+    LOG.debug("Loaded string from NFC:{}".format(data))
     LOG.debug("Spliting loaded string to array")
-    print(data)
 
     # Split data into an array
     array = [x for x in data.split()]
-    print(array)
+
     
     nfcRecord = NfcRecord(''.join(array[:2]), \
                           ''.join(array[-2:]), \
@@ -48,35 +57,45 @@ while True:
                           ''.join(array[3:-6]), \
                           int(''.join(array[19:-2]),16))
 
-    users = db.child("users").get()
-    user = db.child("users").order_by_child("nid").equal_to(nfcRecord.nID).get().val()
+    LOG.debug("NID received: {}".format(nfcRecord.nID))
 
-    for x in users.val():
-        print(users.val()[x]["nid"])
-        print(nfcRecord.nID)
-        if(users.val()[x]["nid"] == nfcRecord.nID):
-            userDictionary = users.val()[x]
-            print("DISPLEJ - Zadaj PIN")
-            LOG.info("ID is in database.")
-            LOG.info("Waiting for keyboard INPUT from keyboard")
+    user = db.child("users").order_by_child("nid").equal_to(nfcRecord.nID).get()
+    if(user.each() == []):
+        print("DISPLEJ - Pouzivatel neexistuje!")
+        LOG.debug("User not found in database!")
+    else:
+      userValues = user.each()[0].val()
 
-            for i in range(NUMBER_OF_PIN_ATTEMPTS):
-                LOG.info("Loaded PIN")
-                if(userDictionary["pin"] == readFromKeyboard()):
-                    LOG.info("Authorization successful, User:{}".format(userDictionary["name"]))
-                    print("DISPLEJ - Autorizacia uspesna!")
-                    break
-                else:
-                    LOG.info("Authorization unsuccessful User: {}, Attempt: {}/{}".format(userDictionary["name"], \
-                                                                                              i+1, \
-                                                                                              NUMBER_OF_PIN_ATTEMPTS))
-                    print("DISPLEJ - Autorizacia neuspesna! Pokus {} z {}".format(i+1, \
-                                                                                  NUMBER_OF_PIN_ATTEMPTS))
+      outputJson = {'Timestamp': datetime.datetime.now().isoformat(),
+                    'Username': userValues['name'],
+                    'E-Mail': userValues['email'],
+                    'FirebaseID': user.each()[0].key(),
+                    'Action':'False'}
 
+      print("DISPLEJ - Zadaj PIN")
+      LOG.debug("ID is in database.")
+      LOG.debug("Waiting for keyboard INPUT...")
+      for i in range(NUMBER_OF_PIN_ATTEMPTS):
+        loadedPin = readFromKeyboard()
+        LOG.debug("Loaded PIN:{}".format(loadedPin))
 
+        if(userValues["pin"] == loadedPin):
+          outputJson["Action"] = "True"
+          appendAuditJson(outputJson)
+          LOG.debug("Authorization successful, User:{}".format(userValues["name"]))
+          print("DISPLEJ - Autorizacia uspesna!")
+          break
         else:
-            LOG.info("User not found in database!")
-            print("DISPLEJ - Pouzivatel neexistuje!")
+          appendAuditJson(outputJson)
+          LOG.debug("Authorization unsuccessful User: {}, Attempt: {}/{}".format(userValues["name"], \
+                                                                                    i+1, \
+                                                                                    NUMBER_OF_PIN_ATTEMPTS))
+          print("DISPLEJ - Autorizacia neuspesna! Pokus {} z {}".format(i+1, \
+                                                                      NUMBER_OF_PIN_ATTEMPTS))
+
+    LOG.debug("Authorization finished. User not logged in!!!")
+
+
 
 
 

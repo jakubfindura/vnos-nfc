@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<!-- DataTables -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.15/css/jquery.dataTables.css">
+  
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.15/js/jquery.dataTables.js"></script>
+
+	<!-- DataTables -->
+	<script type="text/javascript">
+		$(document).ready(function() {
+		    $('#table_id').DataTable( {
+		        "ajax": 'arrays.json'
+		    } );
+		} );
+	</script>
+</head>
+<body>
+	<table id="table_id" class="display" cellspacing="0" width="100%">
+		<thead>
+			<tr>
+				<th>Timestamp</th>
+				<th>Username</th>
+				<th>E-Mail</th>
+				<th>FirebaseID</th>
+				<th>Action</th>
+			</tr>
+		</thead>
+		<!--<tfoot>
+			<tr>
+				<th>Timestamp</th>
+				<th>Username</th>
+				<th>E-Mail</th>
+				<th>FirebaseID</th>
+				<th>Action</th>
+			</tr>
+		</tfoot> -->
+	</table>
+</body>
+</html>
