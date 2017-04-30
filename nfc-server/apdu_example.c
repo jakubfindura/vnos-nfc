@@ -1,34 +1,73 @@
 #include <stdlib.h>
 #include <string.h>
 #include <nfc/nfc.h>
+
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+#define BUFFER_SIZE 10000 
+#define MAX_CONNECTION 10
+
+#define HOSTNAME_LEN 255
+#define MAX_TRIES 10
+
+char pipe_filename[] = "nfc_fifo.tmp";
+
 int CardTransmit(nfc_device *pnd, uint8_t * capdu, size_t capdulen, uint8_t * rapdu, size_t * rapdulen) {
   int res;
   size_t  szPos;
   printf("=> ");
+  
   for (szPos = 0; szPos < capdulen; szPos++) {
     printf("%02x ", capdu[szPos]);
   }
   printf("\n");
+  
   if ((res = nfc_initiator_transceive_bytes(pnd, capdu, capdulen, rapdu, *rapdulen, 500)) < 0) {
-	printf("C\n");
-	return -1;
+    return -1;
   } else {
     *rapdulen = (size_t) res;
     printf("<= ");
+    
     for (szPos = 0; szPos < *rapdulen; szPos++) {
       printf("%02x ", rapdu[szPos]);
     }
     printf("\n");
-	printf("D\n");
-	return 0;
+    return 0;
   }
 }
 
+int isValidMessage(uint8_t* apdu, size_t apdulen) {
+  if ( apdulen < 4 ) return -1;
+  if ( apdu[0] != 0xAA && apdu[1] != 0xAA) return -1;
+  if ( apdu[apdulen-1] != 0x55 && apdu[apdulen-2] != 0x55 ) return -1;
+  return 1;
+}
+
+int writeToFIFO(uint8_t* apdu, size_t apdulen) {
+  FILE * wfd = fopen(pipe_filename, "w");
+  if (wfd < 0) {
+    printf("open() error: %d\n", wfd);
+    return -1;
+  }
+
+  size_t szPos;
+  for (szPos = 0; szPos < apdulen; szPos++) {
+    int s_write = fprintf(wfd, "%02x ", apdu[szPos]);
+
+    if (s_write < 0)
+    {
+        printf("fprintf() error: %d\n", s_write);
+        break;
+    }
+  } 
+  
+  fclose(wfd);
+  return 1;
+}
+
 int main(int argc, const char *argv[]) {
-
-  printf("%d\n",sizeof(int));
-
-  char pipe_filename[] = "nfc_fifo.tmp";
+  
   unlink(pipe_filename);
   int pipe_fd = mkfifo(pipe_filename, 0777);
 
@@ -36,7 +75,6 @@ int main(int argc, const char *argv[]) {
       printf("mkfifo() error: %d\n", pipe_fd);
       return -1;
   }
-    printf("A\n");
 
   nfc_device *pnd;
   nfc_target nt;
@@ -46,6 +84,7 @@ int main(int argc, const char *argv[]) {
     printf("Unable to init libnfc (malloc)\n");
     exit(EXIT_FAILURE);
   }
+
   const char *acLibnfcVersion = nfc_version();
   (void)argc;
   printf("%s uses libnfc %s\n", argv[0], acLibnfcVersion);
@@ -68,73 +107,71 @@ int main(int argc, const char *argv[]) {
     .nbr = NBR_106,
   };
   // nfc_set_property_bool(pnd, NP_AUTO_ISO14443_4, true);
-  printf("Polling for target...\n");
-  while (nfc_initiator_select_passive_target(pnd, nmMifare, NULL, 0, &nt) <= 0);
-  printf("Target detected!\n");
-  uint8_t capdu[264];
-  size_t capdulen;
-  uint8_t rapdu[264];
-  size_t rapdulen;
-  // Select application
-  memcpy(capdu, "\x00\xA4\x04\x00\x07\xf0\x01\x02\x03\x04\x05\x06", 12);
-  capdulen=12;
-  rapdulen=sizeof(rapdu);
-  int ct = 0;
-  ct = CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen);
-  printf("%d\n", ct);
-  if (ct < 0) {
-    printf("A\n");
-    exit(EXIT_FAILURE);
-  };
 
-  // Send message back "Hello from RPi"
-  memcpy(capdu, "\x48\x65\x6C\x6C\x6F\x20\x66\x72\x6F\x6D\x20\x52\x50\x69", 14);
-  capdulen=14;
+  while (true) {
+    printf("Polling for target...\n");
+    while (nfc_initiator_select_passive_target(pnd, nmMifare, NULL, 0, &nt) <= 0);
+    printf("Target detected!\n");
+    
+    uint8_t capdu[264];
+    size_t capdulen;
+    uint8_t rapdu[264];
+    size_t rapdulen;
 
-  size_t  szPos;
-  while ( true ) {
-    // Listen while remote in range  
+    bool authMsgReceived = false;
+    int tries = 0;
+    
+    // Select application
+    memcpy(capdu, "\x00\xA4\x04\x00\x07\xf0\x01\x02\x03\x04\x06\x07", 12);
+    capdulen = 12;
     rapdulen = sizeof(rapdu);
+    
+    int ct = 0;
     ct = CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen);
-    if (ct < 0) break;
+    
+    if (ct < 0) continue;
 
-    printf("Length: %d\n", rapdulen);
+    if ( rapdu[0] == 0x90 && rapdu[1] == 0x00 ) {
+      while( !authMsgReceived && tries < MAX_TRIES) {
+        tries++;
+        memcpy(capdu, "\xAA\xAA\x02\x55\x55", 5);
+        capdulen=5;
+        
+        ct = 0;
+        rapdulen = sizeof(rapdu);
+        ct = CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen);
 
-    for (szPos = 0; szPos < rapdulen; szPos++) {
-      printf("%d ", rapdu[szPos]);
-    } 
+        if (ct < 0) break;
+        //TODO
 
-    if ( rapdu[0] == 0x66 && rapdu[1] == 0x66 ) {
-      printf("Writing to FIFO\n");
+        if ( isValidMessage( rapdu, rapdulen ) ) {
+          if( rapdu[2] == 0x10 ) {
+            printf("Writing to FIFO\n");
 
-      FILE * wfd = fopen(pipe_filename, "w");
-      if (wfd < 0) {
-        printf("open() error: %d\n", wfd);
-        return -1;
-      }
+            writeToFIFO(rapdu, rapdulen);
+           
+            memcpy(capdu, "\xAA\xAA\x03\x55\x55", 5);
+            capdulen = 5;
+          
+            ct = 0;
+            rapdulen = sizeof(rapdu);
+            ct = CardTransmit(pnd, capdu, capdulen, rapdu, &rapdulen);
 
-      for (szPos = 0; szPos < rapdulen; szPos++) {
-        int s_write = fprintf(wfd, "%d ", rapdu[szPos]);
-
-        if (s_write < 0)
-        {
-            printf("fprintf() error: %d\n", s_write);
-            break;
+            if (ct < 0) break;
+            // TODO
+            authMsgReceived = true;
+          }
         }
-      } 
-      
-      fclose(wfd);
+      }
+    
     }
-    
-    printf("\n");
-    
 
+    printf("Done\n");
 
   }
 
-  printf("end\n");
-
-  unlink(pipe_filename);
+  
+  unlink(pipe_filename);  
 
   nfc_close(pnd);
   nfc_exit(context);
