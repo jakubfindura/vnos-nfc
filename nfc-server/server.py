@@ -104,11 +104,11 @@ while True:
     else:
       userValues = user.each()[0].val()
 
-      outputJson = {'Timestamp': datetime.datetime.now().isoformat(),
-                    'Username': userValues['name'],
-                    'E-Mail': userValues['email'],
-                    'FirebaseID': user.each()[0].key(),
-                    'Action':'False'}
+      outputJson = [datetime.datetime.now().isoformat(),
+                    userValues['name'],
+                    userValues['email'],
+                    user.each()[0].key(),
+                    "False"]
 
       print("DISPLEJ - Zadaj PIN")
       LOG.debug("ID is in database.")
