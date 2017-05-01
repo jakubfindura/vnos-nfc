@@ -1,5 +1,10 @@
 from logger import LOG
 from keypad import readFromKeyboard
+import pyrebase
+import json
+import time
+import datetime
+
 import RPi.GPIO as GPIO
 from time import sleep
 import threading
@@ -70,18 +75,45 @@ def led_coroutine(LED_GPIO, delay, count):
 def blink(led,delay=200,count=5):
   t = Process(target=led_coroutine, daemon=True, args=(led,delay,count))
   t.start()
-  
+
+config = {
+  "apiKey": "AIzaSyDOHduR778EpMt98zEVyg42vjKKhIkhPas",
+  "authDomain": "vnos-nfc.firebaseapp.com",
+  "databaseURL": "https://vnos-nfc.firebaseio.com/",
+  "storageBucket": "vnos-nfc.appspot.com"
+}
+
+class NfcRecord:
+    def __init__(self, preamble, msgType, postamble, nID, timestamp):
+         self.preamble = preamble
+         self.msgTyoe = msgType
+         self.postamble = postamble
+         self.nID = nID
+         self.timestamp = timestamp
+
+
+def appendAuditJson(jsonAudit):
+  with open(AUDIT_FILE, mode='r', encoding='utf-8') as feedsjson:
+    feeds = json.load(feedsjson)
+  with open(AUDIT_FILE, mode='w', encoding='utf-8') as feedsjson:
+    feeds['data'].append(jsonAudit)
+    json.dump(feeds, feedsjson)
+
+# Load Firebase APP
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
+LOG.debug("Firebase loaded")
 
 # Block until writer finishes...
 while True:
     #LOG.debug("Waiting for communication...")
     white = Process(target=led_coroutine, daemon=True, args=(LED_WHITE,300,0))
-    print("Waiting...")
+
+    LOG.debug("Waiting for communication...")
     with open(FIFO_FILE, 'r') as f:
         data = f.read()
 
     white.start()
-
     LOG.debug("Loaded string from NFC:{}".format(data))
     LOG.debug("Spliting loaded string to array")
 
@@ -138,5 +170,6 @@ while True:
     white.terminate()
     GPIO.output(LED_WHITE,False)
 
-
+    LOG.debug("Authorization finished. User not logged in!!!")
+    blink(LED_RED,300,5)
 
