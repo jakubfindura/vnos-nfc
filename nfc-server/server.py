@@ -1,6 +1,9 @@
 from logger import LOG
 from keypad import readFromKeyboard
 from time import sleep
+from RPLCD.i2c import CharLCD
+
+
 from multiprocessing import Process
 import datetime
 import RPi.GPIO as GPIO
@@ -72,16 +75,32 @@ def blink(led,delay=200,count=5):
   t = Process(target=led_coroutine, daemon=True, args=(led,delay,count))
   t.start()
 
+def lcd_init():
+  print("LCD INIT")
+  lcd = CharLCD(0x3f)
+  lcd.clear()
+  return lcd
+
+def lcd_print(string, row=0, col=0):
+  lcd.cursor_pos = (row,col)
+  if( len(string) > 16 ):
+    raise Exception("To many characters")
+  lcd.write_string(string)
+
+lcd = None
+lcd = lcd_init()
 # Block until writer finishes...
 while True:
     #LOG.debug("Waiting for communication...")
     white = Process(target=led_coroutine, daemon=True, args=(LED_WHITE,300,0))
-
+    lcd.clear()
+    lcd_print("Prilozte kartu", 0, 0)
     LOG.debug("Waiting for communication...")
     with open(FIFO_FILE, 'r') as f:
         data = f.read()
 
     white.start()
+    lcd_print("Autentifikujem", 0, 0)
     LOG.debug("Loaded string from NFC:{}".format(data))
     LOG.debug("Spliting loaded string to array")
 
@@ -98,9 +117,13 @@ while True:
     LOG.debug("NID received: {}".format(nfcRecord.nID))
 
     user = db.child("users").order_by_child("nid").equal_to(nfcRecord.nID).get()
+    authenticated = False
+
     if(user.each() == []):
-        print("DISPLEJ - Pouzivatel neexistuje!")
-        LOG.debug("User not found in database!")
+      lcd_print("Pouzivatel      ", 0, 0)
+      lcd_print(" neexistuje!    ", 1, 0)
+      print("DISPLEJ - Pouzivatel neexistuje!")
+      LOG.debug("User not found in database!")
     else:
       userValues = user.each()[0].val()
 
@@ -113,16 +136,20 @@ while True:
       print("DISPLEJ - Zadaj PIN")
       LOG.debug("ID is in database.")
       LOG.debug("Waiting for keyboard INPUT...")
+
       for i in range(NUMBER_OF_PIN_ATTEMPTS):
+        lcd_print("Zadaj PIN({}/3): ".format(i+1), 1, 0)
         loadedPin = readFromKeyboard()
         LOG.debug("Loaded PIN:{}".format(loadedPin))
+
 
         if(userValues["pin"] == loadedPin):
           outputJson[4] = "True"
           appendAuditJson(outputJson)
           LOG.debug("Authorization successful, User:{}".format(userValues["name"]))
           print("DISPLEJ - Autorizacia uspesna!")
-          blink(LED_GREEN,300,5)
+          
+          authenticated = True
           break
         else:
           appendAuditJson(outputJson)
@@ -131,10 +158,27 @@ while True:
                                                                                     NUMBER_OF_PIN_ATTEMPTS))
           print("DISPLEJ - Autorizacia neuspesna! Pokus {} z {}".format(i+1, \
                                                                         NUMBER_OF_PIN_ATTEMPTS))
-          blink(LED_RED,200,3)                                                            
-
+          lcd_print("Zly PIN         ", 1, 0)
+          sleep(1)
+          blink(LED_RED,200,3)
+      else:
+        authenticated = False                                                          
 
     white.terminate()
+
+    if authenticated:
+      blink(LED_GREEN,300,5)
+      lcd_print("Autorizacia     ", 0, 0)
+      lcd_print(" uspesna!       ", 1, 0)
+      sleep(2)
+      lcd_print("Otvaram dvere   ", 0, 0)
+      lcd_print("                ", 1, 0)
+      sleep(1)
+    else:
+      blink(LED_RED,300,5)
+      lcd_print("Autorizacia     ")
+      lcd_print(" neuspesna!!!   ", 1, 0)
+      sleep(2)
+      
     GPIO.output(LED_WHITE,False)
-    blink(LED_RED,300,5)
 
