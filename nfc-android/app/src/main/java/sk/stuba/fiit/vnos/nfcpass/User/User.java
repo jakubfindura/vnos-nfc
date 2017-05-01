@@ -1,4 +1,4 @@
-package sk.stuba.fiit.vnos.nfcpass;
+package sk.stuba.fiit.vnos.nfcpass.User;
 
 import android.content.SharedPreferences;
 

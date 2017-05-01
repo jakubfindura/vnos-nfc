@@ -16,97 +16,123 @@
     >
 
     <LinearLayout
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <RelativeLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
             <TextView
                 android:text="Logged User:"
                 android:layout_width="match_parent"
-                android:layout_height="30dp"
+                android:layout_height="wrap_content"
                 android:id="@+id/textView5"
                 android:textAlignment="textEnd"
-                android:gravity="center|end"
-                android:paddingRight="10dp" />
+                android:paddingRight="10dp"
+                android:layout_weight="2"
+                android:minHeight="30dp" />
 
             <TextView
-                android:text="NFC ID:"
                 android:layout_width="match_parent"
-                android:layout_height="30dp"
-                android:id="@+id/textView3"
-                android:textAlignment="textEnd"
-                android:gravity="center|end"
-                android:paddingRight="10dp"
-                android:layout_below="@+id/textView2"
-                android:layout_alignParentStart="true" />
+                android:layout_height="wrap_content"
+                android:id="@+id/textView_username"
+                android:textAlignment="textStart"
+                android:gravity="center"
+                android:layout_weight="1" />
+        </LinearLayout>
 
-            <TextView
-                android:text="PIN Number:"
-                android:layout_width="match_parent"
-                android:layout_height="30dp"
-                android:id="@+id/textView4"
-                android:textAlignment="textEnd"
-                android:gravity="center|end"
-                android:paddingRight="10dp"
-                android:layout_below="@+id/textView3"
-                android:layout_alignParentStart="true" />
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
             <TextView
                 android:text="Firebase UID: "
                 android:layout_width="match_parent"
-                android:layout_height="30dp"
+                android:layout_height="wrap_content"
                 android:id="@+id/textView2"
                 android:textAlignment="textEnd"
-                android:gravity="center|end"
                 android:paddingRight="10dp"
                 android:layout_below="@+id/textView5"
-                android:layout_alignParentStart="true" />
-        </RelativeLayout>
-
-        <RelativeLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
+                android:layout_alignParentStart="true"
+                android:layout_weight="2"
+                android:minHeight="30dp" />
 
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="30dp"
-                android:id="@+id/textView_username"
-                android:textAlignment="textStart"
-                android:gravity="center" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="30dp"
                 android:id="@+id/textView_firebaseId"
                 android:textAlignment="textStart"
                 android:gravity="center"
                 android:layout_below="@+id/textView_username"
-                android:layout_alignParentStart="true" />
+                android:layout_alignParentStart="true"
+                android:text="d73c94106d65b222a72c4e211d66d38ed73c94106d65b222a72c4e211d66d38e"
+                android:layout_weight="1"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="NFC ID:"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/textView3"
+                android:textAlignment="textEnd"
+                android:paddingRight="10dp"
+                android:layout_below="@+id/textView2"
+                android:layout_alignParentStart="true"
+                android:layout_weight="2"
+                android:minHeight="30dp" />
 
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="30dp"
-                android:id="@+id/textView_pin"
-                android:textAlignment="textStart"
-                android:gravity="center"
-                android:layout_below="@+id/textView_nfcId"
-                android:layout_alignParentStart="true" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="30dp"
+                android:layout_height="wrap_content"
                 android:id="@+id/textView_nfcId"
                 android:textAlignment="textStart"
                 android:gravity="center"
                 android:layout_below="@+id/textView_firebaseId"
-                android:layout_alignParentStart="true" />
-        </RelativeLayout>
+                android:layout_alignParentStart="true"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:text="PIN Number:"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/textView4"
+                android:textAlignment="textEnd"
+                android:paddingRight="10dp"
+                android:layout_below="@+id/textView3"
+                android:layout_alignParentStart="true"
+                android:layout_weight="2"
+                android:minHeight="30dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/textView_pin"
+                android:textAlignment="textStart"
+                android:gravity="center"
+                android:layout_below="@+id/textView_nfcId"
+                android:layout_alignParentStart="true"
+                android:layout_weight="1"
+                android:text="asd" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </LinearLayout>

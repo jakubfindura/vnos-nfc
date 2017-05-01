@@ -1,4 +1,4 @@
-package sk.stuba.fiit.vnos.nfcpass;
+package sk.stuba.fiit.vnos.nfcpass.User;
 
 /**
  * Created by jakub on 24.04.2017.
