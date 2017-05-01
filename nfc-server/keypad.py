@@ -28,6 +28,7 @@ for i in range(4):
 
 def readFromKeyboard():
     stringList = []
+    done = False
     try:
         while(True):
             for j in range(4):
@@ -36,14 +37,18 @@ def readFromKeyboard():
                     if GPIO.input(ROW[i]) == 0:
                         GPIO.output(LED[i],True)        
                         loadedCharacter = MATRIX[i][j]
+                        print(loadedCharacter)
                         if(loadedCharacter == "#"):
                             #print MATRIX[i][j]
-                            return ''.join(stringList)
-                        stringList.append(loadedCharacter)
+                            done = True
+                        else:
+                            stringList.append(loadedCharacter)
                         while(GPIO.input(ROW[i]) == 0):
                             pass
                         GPIO.output(LED[i],False)       
                 GPIO.output(COL[j], 1)
+            if done:
+                return ''.join(stringList)
     except KeyboardInterrupt:
         GPIO.cleanup()
         return None
