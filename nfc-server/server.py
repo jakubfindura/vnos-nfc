@@ -1,14 +1,10 @@
 from logger import LOG
 from keypad import readFromKeyboard
-import pyrebase
-import json
-import time
-import datetime
-
-import RPi.GPIO as GPIO
 from time import sleep
-import threading
 from multiprocessing import Process
+import datetime
+import RPi.GPIO as GPIO
+import threading
 import pyrebase
 import json
 import time
@@ -76,34 +72,6 @@ def blink(led,delay=200,count=5):
   t = Process(target=led_coroutine, daemon=True, args=(led,delay,count))
   t.start()
 
-config = {
-  "apiKey": "AIzaSyDOHduR778EpMt98zEVyg42vjKKhIkhPas",
-  "authDomain": "vnos-nfc.firebaseapp.com",
-  "databaseURL": "https://vnos-nfc.firebaseio.com/",
-  "storageBucket": "vnos-nfc.appspot.com"
-}
-
-class NfcRecord:
-    def __init__(self, preamble, msgType, postamble, nID, timestamp):
-         self.preamble = preamble
-         self.msgTyoe = msgType
-         self.postamble = postamble
-         self.nID = nID
-         self.timestamp = timestamp
-
-
-def appendAuditJson(jsonAudit):
-  with open(AUDIT_FILE, mode='r', encoding='utf-8') as feedsjson:
-    feeds = json.load(feedsjson)
-  with open(AUDIT_FILE, mode='w', encoding='utf-8') as feedsjson:
-    feeds['data'].append(jsonAudit)
-    json.dump(feeds, feedsjson)
-
-# Load Firebase APP
-firebase = pyrebase.initialize_app(config)
-db = firebase.database()
-LOG.debug("Firebase loaded")
-
 # Block until writer finishes...
 while True:
     #LOG.debug("Waiting for communication...")
@@ -162,14 +130,11 @@ while True:
                                                                                     i+1, \
                                                                                     NUMBER_OF_PIN_ATTEMPTS))
           print("DISPLEJ - Autorizacia neuspesna! Pokus {} z {}".format(i+1, \
-          blink(LED_RED,200,3)                                                            NUMBER_OF_PIN_ATTEMPTS))
-
-    LOG.debug("Authorization finished. User not logged in!!!")
+                                                                        NUMBER_OF_PIN_ATTEMPTS))
+          blink(LED_RED,200,3)                                                            
 
 
     white.terminate()
     GPIO.output(LED_WHITE,False)
-
-    LOG.debug("Authorization finished. User not logged in!!!")
     blink(LED_RED,300,5)
 
