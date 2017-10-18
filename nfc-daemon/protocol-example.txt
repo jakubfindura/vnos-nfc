@@ -1,0 +1,47 @@
+PN532 -> ANDROID (Select App)
+	00 A4 04 00 07 F0 01 02 03 04 05 06
+
+	00 0A 04 00
+		SELECT AID
+	07
+		Length
+	F0 01 02 03 04 05 06
+		AID
+
+ANDROID -> PN532 (Ok)
+	90 00
+
+	90 00
+		OK
+
+PN532 -> ANDROID (Auth request)
+	AA AA 02 55 55
+
+	AA AA
+		MSG START
+	02
+		AUTH
+	55 55
+		MSG END
+
+ANDROID -> PN532 (Auth message)
+	AA AA a3 0d f1 2b 1f 67 47 d0 83 81 7f 19 58 fe 07 9f 58 FC 0A A0 55 55
+
+	AA AA
+		MSG START
+	a3 0d f1 2b 1f 67 47 d0 83 81 7f 19 58 fe 07 9f 
+		NFC ID
+	58 FC 0A A0 
+		TIMESTAMP "YYYY:MM:DD HH"
+	55 55
+		MSG END
+
+PN532 -> ANDROID (Auth message Ok)
+	AA AA 03 55 55
+	
+	AA AA 
+		MSG START
+	03 
+		AUTH OK
+	55 55
+		MSG END
